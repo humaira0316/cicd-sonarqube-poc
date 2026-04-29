@@ -14,7 +14,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
-                    sonar-scanner \
+                    /opt/sonar-scanner/bin/sonar-scanner \
                     -Dsonar.projectKey=html-poc \
                     -Dsonar.sources=. \
                     -Dsonar.login=$SONAR_AUTH_TOKEN
