@@ -10,22 +10,12 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install -r requirements.txt
-                '''
-            }
-        }
-
         stage('Sonar Scan') {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
                     sonar-scanner \
-                    -Dsonar.projectKey=demo-app \
+                    -Dsonar.projectKey=html-poc \
                     -Dsonar.sources=. \
                     -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
@@ -35,16 +25,16 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t demoapp .'
+                sh 'docker build -t html-poc .'
             }
         }
 
         stage('Deploy') {
             steps {
                 sh '''
-                docker stop demo || true
-                docker rm demo || true
-                docker run -d -p 5000:5000 --name demo demoapp
+                docker stop html-container || true
+                docker rm html-container || true
+                docker run -d -p 8081:80 --name html-container html-poc
                 '''
             }
         }
