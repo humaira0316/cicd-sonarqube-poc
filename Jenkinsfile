@@ -3,17 +3,10 @@ pipeline {
 
     environment {
         IMAGE_NAME = "humaira0316/docker-maven-poc"
-        IMAGE_TAG = "v1"
+        TAG = "v1"
     }
 
     stages {
-
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/humaira0316/docker-maven-poc.git'
-            }
-        }
 
         stage('Maven Build') {
             steps {
@@ -26,8 +19,7 @@ pipeline {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
                     mvn sonar:sonar \
-                    -Dsonar.projectKey=docker-maven-poc \
-                    -Dsonar.login=$SONAR_AUTH_TOKEN
+                    -Dsonar.projectKey=docker-maven-poc
                     '''
                 }
             }
@@ -35,31 +27,23 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
+                sh 'docker build -t $IMAGE_NAME:$TAG .'
             }
         }
 
         stage('Docker Push') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'docker-hub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
                     sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker push $IMAGE_NAME:$IMAGE_TAG
+                    echo $PASS | docker login -u $USER --password-stdin
+                    docker push $IMAGE_NAME:$TAG
                     '''
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'POC-1 Successful: Image pushed to Docker Hub'
         }
     }
 }
