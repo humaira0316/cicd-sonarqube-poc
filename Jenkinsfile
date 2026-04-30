@@ -1,22 +1,32 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "humaira0316/docker-maven-poc"
+        IMAGE_TAG = "v1"
+    }
+
     stages {
 
-        stage('Clone') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/humaira0316/cicd-sonarqube-poc.git'
+                    url: 'https://github.com/humaira0316/docker-maven-poc.git'
             }
         }
 
-        stage('Sonar Scan') {
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
-                    /opt/sonar-scanner/bin/sonar-scanner \
-                    -Dsonar.projectKey=html-poc \
-                    -Dsonar.sources=. \
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=docker-maven-poc \
                     -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
@@ -25,19 +35,31 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t html-poc .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
-        stage('Deploy') {
+        stage('Docker Push') {
             steps {
-                sh '''
-                docker stop html-container || true
-                docker rm html-container || true
-                docker run -d -p 8081:80 --name html-container html-poc
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker push $IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
             }
         }
+    }
 
+    post {
+        success {
+            echo 'POC-1 Successful: Image pushed to Docker Hub'
+        }
     }
 }
