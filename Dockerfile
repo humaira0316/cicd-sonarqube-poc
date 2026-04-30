@@ -1,3 +1,7 @@
-FROM nginx:alpine
-COPY index.html /usr/share/nginx/html/index.html
-EXPOSE 80
+FROM openjdk:17-jdk-slim
+
+WORKDIR /app
+
+COPY target/docker-maven-poc-1.0.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
