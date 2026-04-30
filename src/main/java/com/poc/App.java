@@ -5,4 +5,3 @@ public class App {
         System.out.println("POC-1: Maven Build, Dockerize and Push to Docker Hub");
     }
 }
-``
